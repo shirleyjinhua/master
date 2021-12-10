@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration debug="true" scan="true" scanPeriod="30 seconds">
+
+       
+    <springProperty scope="context" name="logLevelRoot" source="log.level.root"/>
+    <springProperty scope="context" name="logLevelApp" source="log.level.app"/>
+    <springProperty scope="context" name="logLevelSql" source="log.level.sql"/>
+       
+    <springProperty scope="context" name="logPath" source="log.path"/>
+
+    <springProperty scope="context" name="maxHistory" source="log.maxHistory" default="30"/>
+
+    <springProperty scope="context" name="maxSize" source="log.maxSize" default="100MB"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" default="fap-service-ids"/>
+
+    <springProperty scope="context" name="redisHost" source="spring.redis.host" default="127.0.0.1"/>
+    <springProperty scope="context" name="redisPort" source="spring.redis.port" default="6379"/>
+    <springProperty scope="context" name="redisAuth" source="spring.redis.password" default="6379"/>
+
+    <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>
+                %black(控制台-) %red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger) - %cyan(%msg%n)
+            </pattern>
+        </layout>
+    </appender>
+
+    <appender name="fileInfoLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/info.log</file>
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{req.id}] %-5level %logger{30}[:%line] - %msg%n
+            </pattern>
+        </encoder>
+        <!--滚动策略-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!--路径-->
+            <fileNamePattern>${logPath}/info.%d.%i.log</fileNamePattern>
+            <maxFileSize>${maxSize}</maxFileSize>
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+
+    <appender name="fileErrorLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{req.id}] %-5level %logger{30}[:%line] - %msg%n
+            </pattern>
+        </encoder>
+        <!--滚动策略-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!--路径-->
+            <fileNamePattern>${logPath}/error.%d.%i.log</fileNamePattern>
+            <maxFileSize>${maxSize}</maxFileSize>
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="JETCACHE_LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/jetcache.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logPath}/jetcache.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="plumelog" class="com.plumelog.logback.appender.RedisAppender">
+        <appName>${appName}</appName>
+        <redisHost>${redisHost}</redisHost>
+        <redisPort>${redisPort}</redisPort>
+        <redisAuth>${redisAuth}</redisAuth>
+        <runModel>1</runModel>
+        <redisDb>1</redisDb>
+    </appender>
+
+    <!-- 2. 输出SQL 的参数到控制台和文件-->
+    <logger name="com.cmcc.fap" additivity="false">
+        <level value="${logLevelApp}" />
+        <appender-ref ref="consoleLog" />
+        <appender-ref ref="fileInfoLog" />
+        <appender-ref ref="fileErrorLog" />
+        <appender-ref ref="plumelog" />
+    </logger>
+
+    <logger name="com.alicp.jetcache" level="${logLevelRoot}" additivity="false">
+        <appender-ref ref="JETCACHE_LOGFILE" />
+        <appender-ref ref="plumelog" />
+    </logger>
+
+    <logger name="org.hibernate.SQL" additivity="false" >
+        <level value="${logLevelSql}" />
+        <appender-ref ref="fileInfoLog" />
+        <appender-ref ref="consoleLog" />
+        <appender-ref ref="plumelog" />
+    </logger>
+
+    <logger name="org.springframework.jdbc.core" additivity="false" >
+        <level value="${logLevelSql}" />
+        <appender-ref ref="fileInfoLog" />
+        <appender-ref ref="consoleLog" />
+        <appender-ref ref="plumelog" />
+    </logger>
+
+    <root level="${logLevelRoot}">
+        <appender-ref ref="consoleLog" />
+        <appender-ref ref="fileInfoLog" />
+        <appender-ref ref="fileErrorLog" />
+        <appender-ref ref="plumelog" />
+    </root>
+
+</configuration>
